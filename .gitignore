@@ -1,0 +1,6 @@
+/test
+config.yaml
+/logs
+.integration.sif.swp
+integration.sif
+.snakemake
