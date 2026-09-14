@@ -1,0 +1,126 @@
+# =============================================================================
+# Xenium (RNA) + CODEX (protein) integration workflow — configuration
+#
+# Copy this file to config.yaml and fill in the values marked <...>:
+#     cp config.yaml.example config.yaml
+#
+# Everything tunable lives here. The Snakefile turns these into per-rule
+# inputs/outputs/resources; the four step scripts read their parameters from
+# the relevant section below. Edit this file, not the scripts.
+# =============================================================================
+
+# Slides to process. Both modalities are keyed on these slide_IDs.
+slides: ["<SLIDE_ID_1>", "<SLIDE_ID_2>"]
+
+
+# -----------------------------------------------------------------------------
+# Paths. Inputs must already exist; output dirs/files are created by the rules.
+# Use absolute paths.
+# -----------------------------------------------------------------------------
+paths:
+  # --- inputs ---
+  xenium_raw: /path/to/data/Xenium_raw          # one Xenium output folder per slide
+  codex_base: /path/to/data/CODEX_tif_files     # CODEX tiffs per slide
+
+  # --- step 1a outputs ---
+  zarr_dir:    /path/to/results/step1a/zarr_dir
+  concat_h5ad: /path/to/results/step1a/xenium_concatenated.h5ad
+
+  # --- step 1b output (one ID_<slide>_intensity.parquet per slide) ---
+  parquet_dir: /path/to/results/step1b/parquet_dir
+
+  # --- step 2 output dir (final_adata.h5ad lives here) ---
+  qc_dir: /path/to/results/step2
+
+  # --- step 3 output dir (totalVI model, embeddings, clusters, plots) ---
+  integration_dir: /path/to/results/step3
+
+
+# -----------------------------------------------------------------------------
+# Container. All compute runs inside this .sif via `apptainer exec`.
+# Each step picks the conda env that has its dependencies.
+# -----------------------------------------------------------------------------
+container:
+  sif: /path/to/integration.sif
+  python:
+    spatial:       /opt/conda/envs/spatial/bin/python           # step 1a (needs spatialdata_io)
+    int_retrieval: /opt/conda/envs/int_retrieval_env/bin/python  # steps 1b + 2
+    scvi:          /opt/conda/envs/scvi_env/bin/python           # step 3 (GPU)
+  # Host paths made visible inside the container. $TMPDIR is added automatically.
+  # Must cover every input, output and the .sif location above.
+  binds:
+    - /path/to/data
+    - /path/to/results
+
+
+# -----------------------------------------------------------------------------
+# Step 1a — Xenium concatenation
+# -----------------------------------------------------------------------------
+xenium:
+  read_transcripts: false   # transcript points not needed for the cell x gene table
+  write_zarr: true          # step 1b reads the per-slide zarr stores this produces
+  overwrite_zarr: false     # reuse an existing readable zarr instead of rebuilding
+
+
+# -----------------------------------------------------------------------------
+# Step 1b — CODEX per-cell intensities
+# -----------------------------------------------------------------------------
+codex:
+  compartment: cell         # "cell" or "nucleus" label image to average over
+
+
+# -----------------------------------------------------------------------------
+# Step 2 — QC of both modalities + merge into one AnnData
+# -----------------------------------------------------------------------------
+qc:
+  min_counts: 5             # drop Xenium cells with fewer total transcripts
+  min_genes: 2              # drop Xenium cells expressing fewer genes
+  exclude_channels: ["DAPI"]  # channels that are never phenotyping markers
+  markers: null             # null = every channel except exclude_channels; or a list to freeze the panel
+  background_marker: CD4     # per-slide background subtraction target; null to disable
+  background_percentile: 10  # subtract this percentile, clip at 0 -> "<marker>_cor"
+  lower_q: 0.001            # per-slide: intensities below this quantile -> 0
+  upper_q: 0.999            # per-slide upper quantile for the outlier test
+  max_markers_above_upper_q: 4  # drop a cell if it exceeds upper_q in >= this many markers
+  marker_suffix: "_CDX"     # appended to protein names inside the AnnData
+
+
+# -----------------------------------------------------------------------------
+# Step 3 — totalVI integration + Leiden clustering (GPU)
+# -----------------------------------------------------------------------------
+integration:
+  batch_key: slide_ID       # one batch per whole slide
+  resolution: 1             # Leiden resolution
+  target_sum: 100           # RNA normalisation target (visualisation only)
+  max_epochs: 400
+  train_size: 0.9
+  early_stopping_patience: 20
+  dedup: raise              # "raise" or "make_unique" for duplicated suffixed cell ids
+  top_rna: 10               # DE table: max RNA features per cluster
+  top_pro: 5                # DE table: max protein features per cluster
+  bf_rna: 1.2               # log2 Bayes-factor cutoff, RNA
+  bf_protein: 0.45          # log2 Bayes-factor cutoff, protein (noisier -> lower)
+  min_nonzero_prop: 0.1     # dotplot: gene must be detected in > this fraction of a cluster
+
+
+# -----------------------------------------------------------------------------
+# SLURM resources (used by the Snakefile / SLURM executor profile).
+# Partition names below are for ETH Euler; change them for your cluster.
+# NOTE: the container's torch is a CUDA-13 build (2.11+cu130); if step 3 lands on
+# an older-driver node and torch complains about the CUDA version, switch
+# gpu_partition to a partition with CUDA-13 drivers (on Euler: cuda13pr.24h).
+# Leave account "" to use your default association; set it if sbatch demands one.
+# -----------------------------------------------------------------------------
+slurm:
+  account: ""               # e.g. "<your_slurm_account>"
+  cpu_partition: normal.24h
+  gpu_partition: gpu.24h
+  gpus: 1
+
+# Euler SLURM requires --mem-per-cpu (not --mem), so memory is given PER CPU.
+# Total RAM for a step = mem_mb_per_cpu * threads.
+resources:
+  step1a: { mem_mb_per_cpu: 16000, runtime: 240, threads: 4 }   # ~64 GB total, 4 h
+  step1b: { mem_mb_per_cpu: 24000, runtime: 180, threads: 4 }   # ~96 GB total, 3 h
+  step2:  { mem_mb_per_cpu: 16000, runtime: 120, threads: 4 }   # ~64 GB total, 2 h
+  step3:  { mem_mb_per_cpu: 16000, runtime: 1440, threads: 8 }  # ~128 GB total, 24 h (GPU)

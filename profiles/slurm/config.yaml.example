@@ -1,0 +1,24 @@
+# Snakemake SLURM executor profile (snakemake >= 8, snakemake-executor-plugin-slurm).
+# Copy this file to config.yaml in the same folder:
+#     cp profiles/slurm/config.yaml.example profiles/slurm/config.yaml
+# Used with:  snakemake --workflow-profile profiles/slurm
+#
+# Snakemake stays running on the login node and submits ONE separate sbatch job
+# per rule (per step), in dependency order — step 1b is only submitted once step
+# 1a's outputs exist, etc. Per-rule mem_mb / runtime / partition come from each
+# rule's `resources:` block (driven by config.yaml).
+
+executor: slurm
+jobs: 8                     # max SLURM jobs allowed at once
+
+# Fallbacks for any resource a rule does not set explicitly.
+default-resources:
+  runtime: 120             # minutes
+  mem_mb_per_cpu: 4000     # Euler needs --mem-per-cpu, not --mem
+  # slurm_account: "<your_slurm_account>"   # uncomment if sbatch on your allocation requires -A
+
+keep-going: True           # keep independent branches going if one job fails
+rerun-incomplete: True     # resubmit a step whose outputs are incomplete
+restart-times: 1           # retry a failed job once
+printshellcmds: True
+latency-wait: 60           # tolerate shared-filesystem lag before declaring outputs missing
