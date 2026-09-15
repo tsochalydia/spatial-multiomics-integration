@@ -180,6 +180,10 @@ data are never compared.
 5. The steps agree with each other: for example, the number of cells passed from one
    step to the next adds up.
 
+**Result: all five checks passed.** The tidied recipe ran from start to finish on the
+cluster in about 18 minutes, including the graphics-card step. Everything it produced
+went into `test_data/results/`, and nothing else was changed.
+
 ### Small hiccups along the way (and how they were fixed)
 
 - One saved change accidentally left out a file (`run.sh`). This was noticed and added to
@@ -213,7 +217,6 @@ A **new person** only has to:
 
 ## 7. Still to do
 
-- Finish and check the practice run.
 - Rewrite the main `README.md` for newcomers, and add short guides for the settings and
   for rebuilding the lunchbox.
 - Final check: run the **original, untidied recipe** and the **tidied recipe** on **the
