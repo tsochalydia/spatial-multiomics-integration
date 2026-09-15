@@ -93,22 +93,11 @@ integration:
 
 
 # -----------------------------------------------------------------------------
-# SLURM resources (used by the Snakefile / SLURM executor profile).
-# Partition names below are for ETH Euler; change them for your cluster.
-# gpu.24h is the general, broadly-accessible GPU partition. NOTE: the container's
-# torch is a CUDA-13 build (2.11+cu130); if step 3 lands on an older-driver node and
-# torch complains about the CUDA version, switch gpu_partition to a partition with
-# CUDA-13 drivers (on Euler: cuda13pr.24h, guaranteed CUDA-13 but usually more contended).
-# Leave account "" to use your default association; set it if sbatch demands one.
-# -----------------------------------------------------------------------------
-slurm:
-  account: ""               # e.g. "<your_slurm_account>"
-  cpu_partition: normal.24h
-  gpu_partition: gpu.24h
-  gpus: 1
-
+# Job sizes per step (memory, time, threads). Partition names and the SLURM
+# account are cluster settings: they live in profiles/slurm/config.yaml.
 # Euler SLURM requires --mem-per-cpu (not --mem), so memory is given PER CPU.
 # Total RAM for a step = mem_mb_per_cpu * threads.
+# -----------------------------------------------------------------------------
 resources:
   step1a: { mem_mb_per_cpu: 16000, runtime: 240, threads: 4 }   # ~64 GB total, 4 h
   step1b: { mem_mb_per_cpu: 24000, runtime: 180, threads: 4 }   # ~96 GB total, 3 h

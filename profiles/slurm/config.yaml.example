@@ -1,12 +1,14 @@
 # Snakemake SLURM executor profile (snakemake >= 8, snakemake-executor-plugin-slurm).
 # Copy this file to config.yaml in the same folder:
 #     cp profiles/slurm/config.yaml.example profiles/slurm/config.yaml
-# Used with:  snakemake --workflow-profile profiles/slurm
+# Used by run.sh (--workflow-profile profiles/slurm).
+#
+# This file holds everything specific to the CLUSTER (partition names, account).
+# What a run needs (memory, time, threads per step) is set in config/config.yaml.
 #
 # Snakemake stays running on the login node and submits ONE separate sbatch job
 # per rule (per step), in dependency order — step 1b is only submitted once step
-# 1a's outputs exist, etc. Per-rule mem_mb / runtime / partition come from each
-# rule's `resources:` block (driven by config.yaml).
+# 1a's outputs exist, etc.
 
 executor: slurm
 jobs: 8                     # max SLURM jobs allowed at once
@@ -15,7 +17,16 @@ jobs: 8                     # max SLURM jobs allowed at once
 default-resources:
   runtime: 120             # minutes
   mem_mb_per_cpu: 4000     # Euler needs --mem-per-cpu, not --mem
+  slurm_partition: normal.24h   # CPU steps (1a, 1b, 2); partition names are for ETH Euler
   # slurm_account: "<your_slurm_account>"   # uncomment if sbatch on your allocation requires -A
+
+# Per-step cluster settings.
+set-resources:
+  step3_data_integration:
+    # gpu.24h is the general GPU partition. The container's torch is a CUDA-13 build
+    # (2.11+cu130); if step 3 lands on an older-driver node and torch complains about
+    # the CUDA version, use cuda13pr.24h (CUDA-13 guaranteed, usually more contended).
+    slurm_partition: gpu.24h
 
 keep-going: True           # keep independent branches going if one job fails
 rerun-incomplete: True     # resubmit a step whose outputs are incomplete

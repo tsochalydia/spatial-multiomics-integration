@@ -55,8 +55,8 @@ results_dir() {   # paths.results_dir from a config file
 
 # -----------------------------------------------------------------------------
 case "$MODE" in
-    dry)
-        "${SMK[@]}" -n -p --rerun-triggers mtime "$@"
+    dry)   # with the profile, so the plan shows the partitions a real run would use
+        "${SMK[@]}" -n -p --workflow-profile "$PROFILE" --rerun-triggers mtime "$@"
         ;;
     run)
         "${SMK[@]}" --workflow-profile "$PROFILE" --rerun-triggers mtime "$@"

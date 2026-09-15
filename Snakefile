@@ -27,7 +27,6 @@ def abspath(path):
 
 P      = {key: abspath(value) for key, value in config["paths"].items()}
 SIF    = abspath(config["container"]["sif"])
-SLURM  = config["slurm"]
 RES    = config["resources"]
 SLIDES = config["slides"]
 
@@ -124,7 +123,6 @@ rule step1a_xenium_concatenation:
     resources:
         mem_mb_per_cpu=RES["step1a"]["mem_mb_per_cpu"],
         runtime=RES["step1a"]["runtime"],
-        slurm_partition=SLURM["cpu_partition"],
     shell:
         r"""
         {params.exec} {SCRIPTS}/step1a_xenium_concatenation.py \
@@ -154,7 +152,6 @@ rule step1b_codex_intensities:
     resources:
         mem_mb_per_cpu=RES["step1b"]["mem_mb_per_cpu"],
         runtime=RES["step1b"]["runtime"],
-        slurm_partition=SLURM["cpu_partition"],
     shell:
         r"""
         {params.exec} {SCRIPTS}/step1b_codex_intensities.py \
@@ -186,7 +183,6 @@ rule step2_data_qc:
     resources:
         mem_mb_per_cpu=RES["step2"]["mem_mb_per_cpu"],
         runtime=RES["step2"]["runtime"],
-        slurm_partition=SLURM["cpu_partition"],
     shell:
         r"""
         {params.exec} {SCRIPTS}/step2_data_qc.py \
@@ -224,10 +220,11 @@ rule step3_data_integration:
     resources:
         mem_mb_per_cpu=RES["step3"]["mem_mb_per_cpu"],
         runtime=RES["step3"]["runtime"],
-        slurm_partition=SLURM["gpu_partition"],
-        # The SLURM executor plugin builds --gpus itself from this resource;
-        # passing --gpus through slurm_extra is rejected by its validator.
-        gpu=SLURM["gpus"],
+        # One GPU: the script trains on exactly one (devices=1). The SLURM executor
+        # plugin builds --gpus itself from this resource; passing --gpus through
+        # slurm_extra is rejected by its validator. The GPU partition is set in
+        # profiles/slurm/config.yaml.
+        gpu=1,
     shell:
         r"""
         {params.exec} {SCRIPTS}/step3_data_integration.py \
