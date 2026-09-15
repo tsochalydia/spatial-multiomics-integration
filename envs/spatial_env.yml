@@ -1,5 +1,5 @@
 # Conda env "spatial" inside integration.sif (used by step 1a).
-# Pinned export of the env in the built image; created by micromamba.dockerfile.
+# Pinned export of the env in the built image; created by container/Dockerfile.
 name: spatial
 channels:
   - conda-forge

@@ -1,5 +1,5 @@
 # Env that runs Snakemake itself (outside the container) and submits SLURM jobs.
-#     micromamba create -n snakemake_env -f snakemake_env.yml
+#     micromamba create -n snakemake_env -f envs/snakemake_env.yml
 name: snakemake_env
 channels:
   - conda-forge

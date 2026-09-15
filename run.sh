@@ -21,7 +21,7 @@
 # set SBATCH_PARTITION / SBATCH_ACCOUNT if your cluster needs them.
 set -euo pipefail
 
-cd "$(dirname "$(readlink -f "$0")")"      # repo root (holds Snakefile + config/)
+cd "$(dirname "$(readlink -f "$0")")"      # repo root (holds workflow/, config/, profiles/)
 REPO=$PWD
 PROFILE=profiles/slurm
 MODE="${1:-dry}"

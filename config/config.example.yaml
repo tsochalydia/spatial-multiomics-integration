@@ -4,7 +4,7 @@
 # Copy this file to config/config.yaml and fill in the values marked <...>:
 #     cp config/config.example.yaml config/config.yaml
 #
-# Everything tunable lives here. The Snakefile turns these into per-rule
+# Everything tunable lives here. workflow/Snakefile turns these into per-rule
 # inputs/outputs/resources; the four step scripts read their parameters from
 # the relevant section below. Edit this file, not the scripts.
 # =============================================================================

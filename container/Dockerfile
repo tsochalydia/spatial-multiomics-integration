@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1
+# Build from the repo root (the env files in envs/ must be in the build context):
+#     docker build -f container/Dockerfile -t integration .
 FROM mambaorg/micromamba:2.8
 
 LABEL maintainer="Erkin <erkin.acar@bsse.ethz.ch>" \
@@ -26,9 +28,9 @@ RUN apt-get update && apt-get install -y \
 USER $MAMBA_USER
 
 # All three envs are built from pinned env files (exact package versions).
-COPY --chmod=755 spatial_env.yml /tmp/spatial_env.yml
-COPY --chmod=755 scvi_env.yml /tmp/scvi_env.yml
-COPY --chmod=755 int_retrieval_env.yml /tmp/int_retrieval_env.yml
+COPY --chmod=755 envs/spatial_env.yml /tmp/spatial_env.yml
+COPY --chmod=755 envs/scvi_env.yml /tmp/scvi_env.yml
+COPY --chmod=755 envs/int_retrieval_env.yml /tmp/int_retrieval_env.yml
 
 WORKDIR /tmp
 
@@ -48,7 +50,7 @@ USER root
 RUN chmod -R a+rX /opt/conda
 
 
-COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=755 container/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

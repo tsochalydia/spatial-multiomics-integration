@@ -1,0 +1,5 @@
+# Build context for container/Dockerfile (built from the repo root).
+# Send only what the Dockerfile copies, not the .sif/.tar images or results.
+*
+!envs/
+!container/

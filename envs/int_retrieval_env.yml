@@ -1,5 +1,5 @@
 # Conda env "int_retrieval_env" inside integration.sif (used by steps 1b and 2).
-# Pinned export of the env in the built image; created by micromamba.dockerfile.
+# Pinned export of the env in the built image; created by container/Dockerfile.
 name: int_retrieval_env
 channels:
   - conda-forge

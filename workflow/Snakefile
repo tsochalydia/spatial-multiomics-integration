@@ -46,7 +46,7 @@ LOGS            = f"{RESULTS}/logs"                              # one log per s
 _CLI_CFGS = list(workflow.config_settings.configfiles)
 CFG = os.path.abspath(_CLI_CFGS[-1] if _CLI_CFGS else DEFAULT_CONFIG)
 
-# Python of each conda env inside integration.sif (fixed by micromamba.dockerfile).
+# Python of each conda env inside integration.sif (fixed by container/Dockerfile).
 PY = {
     "spatial":       "/opt/conda/envs/spatial/bin/python",            # step 1a
     "int_retrieval": "/opt/conda/envs/int_retrieval_env/bin/python",  # steps 1b + 2
