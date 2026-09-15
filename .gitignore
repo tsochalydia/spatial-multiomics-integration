@@ -9,3 +9,13 @@ integration.tar
 .snakemake
 __pycache__
 test_data
+
+# default results_dir (paths.results_dir: results)
+/results/
+# backup copies of personal config files (e.g. config.yaml.backup)
+*.backup*
+# ./run.sh dag output
+/dag.svg
+/dag.dot
+# Jupyter autosaves
+.ipynb_checkpoints/
