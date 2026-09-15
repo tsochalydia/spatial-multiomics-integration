@@ -14,9 +14,15 @@ import os
 
 configfile: "config.yaml"
 
-P      = config["paths"]
+# Paths in the config may be absolute or relative to the directory Snakemake is
+# run from (run.sh runs it from the repo root). They are made absolute here so
+# the scripts and apptainer never depend on the current directory.
+def abspath(path):
+    return os.path.abspath(os.path.expanduser(path))
+
+P      = {key: abspath(value) for key, value in config["paths"].items()}
 PY     = config["container"]["python"]
-SIF    = config["container"]["sif"]
+SIF    = abspath(config["container"]["sif"])
 BINDS  = config["container"]["binds"]
 SLURM  = config["slurm"]
 RES    = config["resources"]
@@ -25,7 +31,7 @@ SLIDES = config["slides"]
 SCRIPTS = os.path.join(workflow.basedir, "scripts")
 
 # Every step writes into its own subfolder of paths.results_dir.
-RESULTS         = P["results_dir"].rstrip("/")
+RESULTS         = P["results_dir"]
 ZARR_DIR        = f"{RESULTS}/step1a/zarr_dir"                   # per-slide *.zarr
 CONCAT_H5AD     = f"{RESULTS}/step1a/xenium_concatenated.h5ad"
 PARQUET_DIR     = f"{RESULTS}/step1b/parquet_dir"                # ID_<slide>_intensity.parquet

@@ -15,7 +15,7 @@ slides: ["<SLIDE_ID_1>", "<SLIDE_ID_2>"]
 
 # -----------------------------------------------------------------------------
 # Paths. Inputs must already exist; output dirs/files are created by the rules.
-# Use absolute paths.
+# Absolute, or relative to the repo root (the folder Snakemake is run from).
 # -----------------------------------------------------------------------------
 paths:
   # --- inputs ---
@@ -28,7 +28,7 @@ paths:
   #   step2/   final_adata.h5ad, tracking_counts.csv, ...
   #   step3/   totalVI model, clusters, plots, DE tables
   #   logs/    one log per step
-  results_dir: /path/to/results
+  results_dir: results                          # relative -> <repo root>/results
 
 
 # -----------------------------------------------------------------------------
