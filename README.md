@@ -1,93 +1,184 @@
 # Xenium (RNA) + CODEX (protein) integration workflow
 
-Snakemake pipeline that concatenates Xenium transcriptomics across TMA slides,
-retrieves per-cell CODEX protein intensities, QCs and merges the two modalities,
-and integrates them with **totalVI** to produce Leiden clusters for annotation.
+A Snakemake pipeline for spatial multi-omics on tissue slides. It:
 
-All compute runs **inside `integration.sif`** via `apptainer exec`. Snakemake
-itself runs from the tiny `snakemake_env` and submits **one SLURM job per step**.
+1. concatenates the Xenium cell × gene tables of several slides,
+2. measures per-cell CODEX protein intensities on the Xenium cell segmentation,
+3. quality-controls both modalities and merges them per cell,
+4. integrates RNA and protein with **totalVI** and clusters the cells (Leiden), with
+   UMAPs, differential-expression tables and marker plots for annotation.
+
+All computation runs **inside one Apptainer image** (`integration.sif`). Snakemake runs
+outside it, in a small conda env, and submits **one SLURM job per step**.
 
 ```
- raw Xenium runs                                    CODEX tiffs
+ raw Xenium runs                                    registered CODEX tiffs
         │                                                │
     [step1a]  Xenium concatenation                       │
         │                                                │
         ├──▶ per-slide *.zarr (cell label images) ───────┤
         │                                                ▼
         │                                             [step1b]  per-cell CODEX intensities
-        │                                                │
         ▼                                                ▼
  xenium_concatenated.h5ad                   ID_<slide>_intensity.parquet
-        │                                                │
         └───────────────────────┬────────────────────────┘
                                 ▼
                              [step2]  QC + merge RNA and protein
-                                │
                                 ▼
                          final_adata.h5ad
-                                │
                                 ▼
-                             [step3]  totalVI integration (GPU)
-                                │
+                             [step3]  totalVI integration + clustering (GPU)
                                 ▼
-          totalVI model, Leiden clusters, UMAPs, DE table
+          totalVI model, Leiden clusters, UMAPs, DE tables, marker plots
 ```
 
-## Layout
+New to the project? [docs/restructure_explained.md](docs/restructure_explained.md)
+explains in plain words how the repository is organised and why.
 
-| File | Purpose |
-|------|---------|
-| `Snakefile` | the 4 rules + `apptainer exec` wiring |
-| `config.yaml` | **all** paths, parameters, SLURM resources — edit this, not the scripts |
-| `scripts/step1a…step3…py` | the four step scripts (argparse + config, logic unchanged from the tested versions) |
-| `profiles/slurm/config.yaml` | SLURM executor profile (one sbatch per rule) |
-| `run.sh` | launcher (`dry` / `dag` / `run` / `unlock`) |
-| `logs/` | per-step python stdout/stderr |
+---
 
-## Container env → step mapping (inside the .sif)
+## Repository layout
 
-| Step | conda env in .sif | why |
-|------|-------------------|-----|
-| 1a | `spatial` | needs `spatialdata_io` |
-| 1b | `int_retrieval_env` | `spatialdata` + `tifffile` |
-| 2  | `int_retrieval_env` | `anndata` + `scanpy` |
-| 3  | `scvi_env` (GPU, `--nv`) | `scvi` + `torch` cu130 |
+| Path | What it is |
+|------|------------|
+| `run.sh` | the launcher, the only thing you run (see [Running](#running)) |
+| `config/config.example.yaml` | template for **your run**: input data, results folder, parameters, job sizes. Copy it to `config/config.yaml`. |
+| `config/README.md` | every config option explained |
+| `profiles/slurm/config.yaml.example` | template for **your cluster**: SLURM partitions, account. Copy it to `profiles/slurm/config.yaml`. |
+| `workflow/Snakefile` | the four rules and how each runs inside the container |
+| `workflow/scripts/` | the four step scripts (`step1a_…` to `step3_…`) |
+| `envs/` | `snakemake_env.yml` (the env you install) and the three pinned envs inside the image |
+| `container/` | `Dockerfile` + `entrypoint.sh` to build the image; see `container/README.md` |
+| `docs/` | background documentation |
 
-## Run it
+`config/config.yaml`, `profiles/slurm/config.yaml`, results, logs, `.snakemake/` and the
+image files are git-ignored.
+
+---
+
+## Requirements
+
+- A **SLURM** cluster with **Apptainer** (Singularity), and a GPU partition for step 3.
+  The container's torch is a CUDA 13 build.
+- **micromamba** (or conda/mamba) to create the Snakemake env.
+- The image **`integration.sif`**. Ask the maintainers for the existing one, or build it
+  (see `container/README.md`).
+
+---
+
+## Quick start
 
 ```bash
-cd /cluster/project/moor/lydia/snakemake_workflow
+# 1. The env that runs Snakemake (once)
+micromamba create -n snakemake_env -f envs/snakemake_env.yml
 
-# 1. Dry run — prints the plan, submits nothing, runs nothing:
+# 2. Your run settings: input folders, results_dir, path to integration.sif, slides
+cp config/config.example.yaml config/config.yaml
+$EDITOR config/config.yaml
+
+# 3. Your cluster settings: partition names, optional account
+cp profiles/slurm/config.yaml.example profiles/slurm/config.yaml
+$EDITOR profiles/slurm/config.yaml
+
+# 4. Rehearse: prints the plan, runs nothing
 ./run.sh dry
 
-# 2. Real run — submits one job per step, in order. Keep this process alive
-#    (use tmux/screen) while it orchestrates:
-tmux new -s smk
-./run.sh run
+# 5. Run: the orchestrator runs as a small SLURM job, so you can log out
+./run.sh submit
+squeue -u $USER          # watch the step jobs
 ```
 
-Re-running only redoes steps whose inputs changed. To force a clean redo of a
-step, delete its outputs (e.g. `rm .../snakemake_testing_qc/final_adata.h5ad`)
-and run again. If a run is killed mid-job, `./run.sh unlock` clears the lock.
+Paths in the config can be absolute, or relative to the repository root.
 
-## Configuring
+---
 
-- **Which slides:** list the slide IDs under `slides:` in `config.yaml`. A slide ID
-  is the number in the Xenium run folder name, e.g. `0056777` in
-  `output-XETG00404__0056777__...`. The list does not apply to every step:
-  - **Step 1a ignores it** and processes every Xenium run found under
-    `xenium_raw`. To process only some slides, point `xenium_raw` to a folder
-    that contains only those runs.
-  - **Step 1b** only computes CODEX intensities for the listed slides.
-  - **Step 2** keeps only cells that have CODEX intensities, so unlisted slides
-    are dropped here. It reads **every** `ID_<slide>_intensity.parquet` in
-    `parquet_dir`, so remove parquets left over from earlier runs with other slides.
-- **QC / totalVI parameters:** the `qc:` and `integration:` sections.
-- **SLURM resources:** the `resources:` and `slurm:` sections (per-step mem_mb,
-  runtime in minutes, partition).
-- **GPU step:** runs on `gpu.24h` with a 24 h limit. The container's torch is a
-  CUDA-13 build; if a `gpu.24h` node has an older driver and torch complains
-  about the CUDA version, set `gpu_partition: cuda13pr.24h` in `config.yaml`.
-- **Account:** default association is used. If sbatch on your allocation demands
-  `-A`, uncomment `slurm_account:` in `profiles/slurm/config.yaml` (e.g. `es_anmoor`).
+## Input data
+
+Point `paths.xenium_raw` and `paths.codex_base` in `config/config.yaml` to:
+
+**Xenium:** a folder with one raw Xenium output folder per slide (each contains
+`experiment.xenium`). The slide ID is read from the folder name, e.g. `0056777` in
+`output-XETG00404__0056777__Region_1__20250612__144008`. The pipeline expects **one run
+per slide**.
+
+**CODEX:** a folder with one sub-folder per slide, named with the slide ID
+(e.g. `ID_0056777__Region_1_scale0_tif`). Each holds one image per channel named
+`…_<CHANNEL>_REGISTERED_…tif(f)`. The images must be **registered to the Xenium image**:
+same height and width as the Xenium cell label image.
+
+**Which slides:** list them under `slides:` in the config.
+
+- Steps 1a and 1b process only the listed slides.
+- Step 1b **stops with an error** if `codex_base` contains a CODEX folder for a slide
+  that has no Xenium data in this run. Keep only the folders of the listed slides there.
+- Step 2 reads **every** `ID_<slide>_intensity.parquet` in the step 1b output folder.
+  Use a fresh `results_dir` when you change the slide list.
+
+---
+
+## Running
+
+| Command | What it does |
+|---------|--------------|
+| `./run.sh dry` | Dry run: prints the plan (steps, files, commands, resources); runs nothing |
+| `./run.sh submit` | Runs the pipeline; the orchestrator is a small SLURM job (48 h limit) |
+| `./run.sh run` | Same, but the orchestrator runs in your shell. Keep it open, e.g. in `tmux`. |
+| `./run.sh unlock` | Removes a stale lock after a killed run |
+| `./run.sh dag` | Writes `dag.svg` (or `dag.dot`) of the step graph |
+
+- **Another config:** `./run.sh dry --configfile config/my_other_run.yaml`. Only that
+  file is read.
+- **Other Snakemake options** are passed on, e.g. `./run.sh dry --forceall`.
+- **Finding Snakemake:** `run.sh` uses `$SNAKEMAKE` if set, else `snakemake` on the
+  `PATH`, else `micromamba run -n snakemake_env snakemake`.
+- **Partition or account for the orchestrator job:** set `SBATCH_PARTITION` /
+  `SBATCH_ACCOUNT`.
+
+**Re-running.** `run.sh` uses `--rerun-triggers mtime`: a step is redone only if one of
+its outputs is missing or an input file is newer than its outputs. This protects
+finished results. It also means that **changing a parameter in the config does not by
+itself redo anything.** After changing, for example, a `qc:` value, force that step and
+everything after it:
+
+```bash
+./run.sh submit --forcerun step2_data_qc      # redoes step 2 and then step 3
+```
+
+Rule names: `step1a_xenium_concatenation`, `step1b_codex_intensities`, `step2_data_qc`,
+`step3_data_integration`.
+
+> Running plain `snakemake` **without** `--rerun-triggers mtime` can decide to redo
+> finished steps after a config change. Use `run.sh`.
+
+---
+
+## Outputs
+
+Everything goes to `paths.results_dir`:
+
+| Folder | Contents |
+|--------|----------|
+| `step1a/` | `xenium_concatenated.h5ad` (raw counts in `.X` and `layers["counts"]`, index `<cell_id>_<slide_ID>`), `zarr_dir/<run>.zarr` per slide |
+| `step1b/parquet_dir/` | `ID_<slide>_intensity.parquet`: mean intensity per cell (`cell_uid`) and channel |
+| `step2/` | `final_adata.h5ad` (RNA + protein in `obsm["protein_expression"]`), `filtered_adata.h5ad`, the CODEX tables before/after filtering, `tracking_counts.csv` (cells kept at each QC stage), `cell_id_x_group/` (per slide: kept / removed by Xenium QC / removed by CODEX QC, for Xenium Explorer) |
+| `step3/` | `model.pt` (trained totalVI), `mdata_*.h5mu` (latent, denoised, Leiden, dendrogram), `elbo_training.png`, UMAPs (`umap_clusters*.png`, `forprob.png`, `denoised_protein.png`), `differential_expression.csv`, `DE_table_*.csv`, `dotplot_*.png`, `matrixplot_*.png` |
+| `logs/` | one log per step (the script's output), plus `orchestrator_<jobid>.log` from `./run.sh submit` |
+
+---
+
+## Troubleshooting
+
+- **Step 3 fails with a CUDA/driver error.** The node's GPU driver is too old for the
+  CUDA 13 torch. In `profiles/slurm/config.yaml` set the step 3 partition to one with
+  CUDA 13 drivers (on ETH Euler: `cuda13pr.24h`).
+- **sbatch asks for an account.** Uncomment `slurm_account` in
+  `profiles/slurm/config.yaml`; set `SBATCH_ACCOUNT` for `./run.sh submit`.
+- **A job ran out of memory or time.** Raise `mem_mb_per_cpu`, `runtime` (minutes) or
+  `threads` for that step under `resources:` in `config/config.yaml`. Total memory =
+  `mem_mb_per_cpu × threads`.
+- **"LockException" after a killed run.** Run `./run.sh unlock`.
+- **A script can't find a file that exists.** The container only sees the input folders,
+  `results_dir`, the scripts and the config folder. If your data contains symlinks to
+  other places, add those folders under `container.extra_binds`.
+- **Where is the error?** Look in `<results_dir>/logs/<step>.log`. SLURM's own job logs
+  are kept only for failed jobs, under `.snakemake/slurm_logs/`.
