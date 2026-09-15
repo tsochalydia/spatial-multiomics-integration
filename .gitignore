@@ -6,3 +6,5 @@
 integration.sif
 integration.tar
 .snakemake
+__pycache__
+test_data
