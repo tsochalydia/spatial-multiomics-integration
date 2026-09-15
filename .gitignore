@@ -1,5 +1,6 @@
 /test
-/config.yaml
+/config/config.yaml
+/config/config.test.yaml
 /profiles/slurm/config.yaml
 /logs
 .integration.sif.swp

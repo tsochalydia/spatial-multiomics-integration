@@ -9,8 +9,8 @@
 #   ./run.sh dag     # write dag.svg (or dag.dot) of the step graph
 #   ./run.sh unlock  # release a stale .snakemake lock after a killed run
 #
-# Config: config.yaml by default; another one with --configfile, e.g.
-#   ./run.sh dry --configfile test_data/config.test.yaml
+# Config: config/config.yaml by default; another one with --configfile, e.g.
+#   ./run.sh dry --configfile config/config.test.yaml
 # Any other options are passed on to Snakemake, e.g.  ./run.sh dry --forceall
 #
 # Snakemake is taken from $SNAKEMAKE if set, else `snakemake` on PATH (activated
@@ -21,7 +21,7 @@
 # set SBATCH_PARTITION / SBATCH_ACCOUNT if your cluster needs them.
 set -euo pipefail
 
-cd "$(dirname "$(readlink -f "$0")")"      # repo root (holds Snakefile + config.yaml)
+cd "$(dirname "$(readlink -f "$0")")"      # repo root (holds Snakefile + config/)
 REPO=$PWD
 PROFILE=profiles/slurm
 MODE="${1:-dry}"
@@ -40,7 +40,7 @@ else
 fi
 
 # -- config file in use (for the orchestrator log location) --------------------
-CONFIG=config.yaml
+CONFIG=config/config.yaml
 ARGS=("$@")
 for i in "${!ARGS[@]}"; do
     case "${ARGS[$i]}" in

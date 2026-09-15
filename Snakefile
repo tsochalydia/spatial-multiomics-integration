@@ -7,12 +7,17 @@
 #   step3   final_adata.h5ad       -> totalVI model, Leiden clusters, plots  [GPU]
 #
 # All compute runs INSIDE integration.sif via `apptainer exec`; Snakemake only
-# orchestrates and submits one SLURM job per rule. Parameters live in config.yaml.
+# orchestrates and submits one SLURM job per rule. Parameters live in
+# config/config.yaml (or the file given with --configfile).
 # =============================================================================
 
 import os
 
-configfile: "config.yaml"
+# config/config.yaml is read only when no --configfile is given, so a different
+# config (e.g. config/config.test.yaml) never inherits settings from it.
+DEFAULT_CONFIG = "config/config.yaml"
+if not workflow.config_settings.configfiles:
+    configfile: DEFAULT_CONFIG
 
 # Paths in the config may be absolute or relative to the directory Snakemake is
 # run from (run.sh runs it from the repo root). They are made absolute here so
@@ -38,9 +43,9 @@ INTEGRATION_DIR = f"{RESULTS}/step3"                             # totalVI model
 LOGS            = f"{RESULTS}/logs"                              # one log per step
 
 # Config file the step scripts read: the one passed with --configfile (e.g. the
-# test config), otherwise config.yaml next to this Snakefile.
+# test config), otherwise config/config.yaml.
 _CLI_CFGS = list(workflow.config_settings.configfiles)
-CFG = os.path.abspath(_CLI_CFGS[-1]) if _CLI_CFGS else os.path.join(workflow.basedir, "config.yaml")
+CFG = os.path.abspath(_CLI_CFGS[-1] if _CLI_CFGS else DEFAULT_CONFIG)
 
 # Python of each conda env inside integration.sif (fixed by micromamba.dockerfile).
 PY = {
