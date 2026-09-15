@@ -97,17 +97,29 @@ Paths in the config can be absolute, or relative to the repository root.
 Point `paths.xenium_raw` and `paths.codex_base` in `config/config.yaml` to:
 
 **Xenium:** a folder with one raw Xenium output folder per slide (each contains
-`experiment.xenium`). The slide ID is read from the folder name, e.g. `0056777` in
-`output-XETG00404__0056777__Region_1__20250612__144008`. The pipeline expects **one run
-per slide**.
+`experiment.xenium`). The slide ID is read from the folder name: the first block of
+digits between double underscores, e.g. `0056777` in
+`output-XETG00404__0056777__Region_1__20250612__144008`. Standard Xenium folder names
+already look like this. The pipeline expects **one run per slide**.
 
-**CODEX:** a folder with one sub-folder per slide, named with the slide ID
-(e.g. `ID_0056777__Region_1_scale0_tif`). Each holds one image per channel named
-`…_<CHANNEL>_REGISTERED_…tif(f)`. The images must be **registered to the Xenium image**:
-same height and width as the Xenium cell label image.
+**CODEX:** a folder with one sub-folder per slide. Each sub-folder holds one image per
+channel. The images must be **registered to the Xenium image**: same height and width
+as the Xenium cell label image. Two naming rules apply:
+
+- **Folder name starts with the slide ID**, optionally after `ID_`: e.g. `0056777_tifs`
+  or `ID_0056777__Region_1_scale0_tif`. A sub-folder named differently
+  (e.g. `slide_0056777`) is ignored without a warning, and step 1b then fails because
+  that slide has no CODEX data.
+- **File name** `…_<CHANNEL>_REGISTERED_….tif` or `.tiff`, e.g.
+  `morphology_focus_0000.ome.tif_8_aSMA_REGISTERED_scale0.tiff`. The channel name is
+  the part just before `_REGISTERED_`, and file names are split at underscores, so
+  **channel names must not contain `_`**: `HLA_DR` would be read as `DR` (use `HLA-DR`).
+  Files without `_REGISTERED_` in the name are ignored.
 
 **Which slides:** list them under `slides:` in the config.
 
+- Slide IDs must be **digits only** (the scripts recognise only digits), written in
+  quotes (see `config/README.md`).
 - Steps 1a and 1b process only the listed slides.
 - Step 1b **stops with an error** if `codex_base` contains a CODEX folder for a slide
   that has no Xenium data in this run. Keep only the folders of the listed slides there.
