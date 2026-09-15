@@ -1,4 +1,6 @@
-name: codex_int_env
+# Conda env "int_retrieval_env" inside integration.sif (used by steps 1b and 2).
+# Pinned export of the env in the built image; created by micromamba.dockerfile.
+name: int_retrieval_env
 channels:
   - conda-forge
 dependencies:
@@ -189,5 +191,3 @@ dependencies:
     - yarl==1.23.0
     - zarr==3.1.6
     - zict==3.0.0
-
-prefix: "/cluster/project/moor/lydia/micromamba/envs/codex_int_env"

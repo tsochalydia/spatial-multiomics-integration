@@ -1,3 +1,5 @@
+# Conda env "scvi_env" inside integration.sif (used by step 3, GPU).
+# Pinned export of the env in the built image; created by micromamba.dockerfile.
 name: scvi_env
 channels:
   - conda-forge
@@ -275,5 +277,3 @@ dependencies:
     - xarray==2026.4.0
     - yarl==1.23.0
     - zarr==3.1.6
-
-prefix: "/cluster/project/moor/lydia/micromamba/envs/scvi_env"
