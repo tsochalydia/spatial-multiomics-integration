@@ -22,18 +22,13 @@ paths:
   xenium_raw: /path/to/data/Xenium_raw          # one Xenium output folder per slide
   codex_base: /path/to/data/CODEX_tif_files     # CODEX tiffs per slide
 
-  # --- step 1a outputs ---
-  zarr_dir:    /path/to/results/step1a/zarr_dir
-  concat_h5ad: /path/to/results/step1a/xenium_concatenated.h5ad
-
-  # --- step 1b output (one ID_<slide>_intensity.parquet per slide) ---
-  parquet_dir: /path/to/results/step1b/parquet_dir
-
-  # --- step 2 output dir (final_adata.h5ad lives here) ---
-  qc_dir: /path/to/results/step2
-
-  # --- step 3 output dir (totalVI model, embeddings, clusters, plots) ---
-  integration_dir: /path/to/results/step3
+  # --- outputs: one subfolder per step is created inside results_dir ---
+  #   step1a/  zarr_dir/ (per-slide *.zarr) + xenium_concatenated.h5ad
+  #   step1b/  parquet_dir/ID_<slide>_intensity.parquet
+  #   step2/   final_adata.h5ad, tracking_counts.csv, ...
+  #   step3/   totalVI model, clusters, plots, DE tables
+  #   logs/    one log per step
+  results_dir: /path/to/results
 
 
 # -----------------------------------------------------------------------------
