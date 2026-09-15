@@ -235,6 +235,13 @@ These would change results or behaviour, so they are left for a separate decisio
 - **Step 3 needs a GPU:** it can only run on a machine with a graphics card.
 - **Step 1a searches slowly:** it searches the raw data folders more thoroughly than
   needed, which is slow but harmless.
+- **Step 1b nucleus option is broken:** the setting `compartment: nucleus` would give
+  protein values to the wrong cells for this Xenium version. The runs use `cell`, which
+  is correct.
+- **Step 3 ignores a setting:** `min_nonzero_prop` has no effect; the dotplot uses a
+  fixed value of 0.1.
+- **Some step 3 changes aren't noticed:** changing `top_rna`, `top_pro` or `bf_rna`
+  does not make the recipe redo step 3 by itself (it has to be forced).
 
 ---
 
