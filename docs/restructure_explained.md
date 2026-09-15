@@ -69,8 +69,8 @@ still did exactly the same thing before moving on. Every change was saved separa
 
 | # | What changed | Why | Does it change the results? |
 |---|--------------|-----|-----------------------------|
-| 1.1 | The recipe reads the settings file you actually give it, and the log folder can be chosen | So a test run can use its own settings and doesn't overwrite the real run's logs | No |
-| 1.2 | One setting, `results_dir` ("put all results here"), replaces five separate output addresses | Fewer things to fill in. The sub-folder names (`step1a`, `step1b`, …) stayed exactly the same, so the finished results are still recognised. | No |
+| 1.1 | The recipe reads the settings file you actually give it | So a test run uses its own settings, not the real run's | No |
+| 1.2 | One setting, `results_dir` ("put all results here"), replaces five separate output addresses. The step logs now go in there too, into `logs/` (for the real run: `test/logs/`; the old logs stay in `logs/`) | Fewer things to fill in, and a test run's logs stay with the test results instead of overwriting the real run's logs. The sub-folder names (`step1a`, `step1b`, …) stayed exactly the same, so the finished results are still recognised. | No |
 | 1.3 | Short addresses like `results` are allowed (meaning "inside the project folder") | Works for anyone who downloads the project, whatever their account | No |
 | 1.4 | The lunchbox settings shrank to one line. The recipe works out by itself which folders the lunchbox may look into. | Less to fill in, and fewer places to make mistakes | No |
 | 1.5 | One start button, `run.sh`, finds the software by itself and has a `submit` option that replaces `submit.sh` | No personal addresses, and fixes happen in one place | No |
@@ -81,7 +81,7 @@ still did exactly the same thing before moving on. Every change was saved separa
 | # | What changed | Why | Does it change the results? |
 |---|--------------|-----|-----------------------------|
 | 2.1 | All settings files moved into a `config/` folder: the real settings, the test settings, and an example to copy | One place to look | No |
-| 2.2 | Cluster-specific names (which queue to use, e.g. `normal.24h` or `gpu.24h`) moved to the cluster settings file (`profiles/slurm/`). How much memory and time each step needs stayed in `config/`. | On another cluster, only the cluster file changes | No |
+| 2.2 | Cluster-specific names (which queue to use, e.g. `normal.24h` or `gpu.24h`) moved to the cluster settings file (`profiles/slurm/`). How much memory and time each step needs stayed in `config/`. The number of graphics cards is no longer a setting: it is fixed at 1 in the recipe. | On another cluster, only the cluster file changes. Step 3 always trains on exactly one graphics card, so asking for more would only leave the extra ones unused. | No |
 
 ### Phase 3: clear folders
 
@@ -110,6 +110,7 @@ profiles/slurm/        CLUSTER SETTINGS: which queues to use
 workflow/              THE RECIPE: Snakefile + the four step scripts
 envs/                  SOFTWARE LISTS: exact versions inside the lunchbox
 container/             LUNCHBOX INSTRUCTIONS: how integration.sif is built
+docs/                  BACKGROUND: explanations like this document
 test_data/             a tiny practice dataset (kept on the cluster, not uploaded)
 
 integration.sif, integration.tar, test/, logs/   unchanged, not moved, not uploaded
@@ -198,27 +199,39 @@ went into `test_data/results/`, and nothing else was changed.
 ## 6. How to use the project now
 
 ```bash
-./run.sh dry                                          # rehearsal: show the plan
-./run.sh submit                                       # run everything on the cluster
+./run.sh dry       # rehearsal: show the plan
+./run.sh submit    # run everything on the cluster
+```
+
+On the cluster copy of the project, the practice data can be used as well:
+
+```bash
 ./run.sh dry --configfile config/config.test.yaml     # rehearsal on the practice data
 ./run.sh submit --configfile config/config.test.yaml  # run on the practice data
 ```
+
+These two only work there. The practice settings (`config/config.test.yaml`) and the
+practice data (`test_data/`) are not uploaded, so someone who downloads the project
+doesn't have them.
 
 A **new person** only has to:
 
 1. install the kitchen manager once:
    `micromamba create -n snakemake_env -f envs/snakemake_env.yml`,
-2. copy `config/config.example.yaml` to `config/config.yaml` and fill in where their
-   data is, where results should go, and where the lunchbox file (`integration.sif`) is,
+2. copy `config/config.example.yaml` to `config/config.yaml` and fill in which slides to
+   use, where their data is, where results should go, and where the lunchbox file
+   (`integration.sif`) is,
 3. copy `profiles/slurm/config.yaml.example` to `profiles/slurm/config.yaml`,
 4. press `./run.sh dry`, then `./run.sh submit`.
+
+The details are in three guides: `README.md` (how to run it and what input data it
+needs), `config/README.md` (every setting) and `container/README.md` (what is in the
+lunchbox and how to rebuild it).
 
 ---
 
 ## 7. Still to do
 
-- Rewrite the main `README.md` for newcomers, and add short guides for the settings and
-  for rebuilding the lunchbox.
 - Final check: run the **original, untidied recipe** and the **tidied recipe** on **the
   same data** and confirm they give the same results.
 - Offer all changes for review on GitHub (a "pull request") before they become the
