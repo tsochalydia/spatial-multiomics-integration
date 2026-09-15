@@ -23,8 +23,12 @@ RES    = config["resources"]
 SLIDES = config["slides"]
 
 SCRIPTS = os.path.join(workflow.basedir, "scripts")
-LOGS    = os.path.join(workflow.basedir, "logs")
-CFG     = os.path.join(workflow.basedir, "config.yaml")
+LOGS    = P.get("logs_dir", os.path.join(workflow.basedir, "logs"))
+
+# Config file the step scripts read: the one passed with --configfile (e.g. the
+# test config), otherwise config.yaml next to this Snakefile.
+_CLI_CFGS = list(workflow.config_settings.configfiles)
+CFG = os.path.abspath(_CLI_CFGS[-1]) if _CLI_CFGS else os.path.join(workflow.basedir, "config.yaml")
 
 # Per-slide CODEX parquets that step 1b must produce (explicit DAG targets).
 PARQUETS = expand(f"{P['parquet_dir']}/ID_{{slide}}_intensity.parquet", slide=SLIDES)
