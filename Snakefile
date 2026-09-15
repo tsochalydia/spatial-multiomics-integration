@@ -21,9 +21,7 @@ def abspath(path):
     return os.path.abspath(os.path.expanduser(path))
 
 P      = {key: abspath(value) for key, value in config["paths"].items()}
-PY     = config["container"]["python"]
 SIF    = abspath(config["container"]["sif"])
-BINDS  = config["container"]["binds"]
 SLURM  = config["slurm"]
 RES    = config["resources"]
 SLIDES = config["slides"]
@@ -43,6 +41,28 @@ LOGS            = f"{RESULTS}/logs"                              # one log per s
 # test config), otherwise config.yaml next to this Snakefile.
 _CLI_CFGS = list(workflow.config_settings.configfiles)
 CFG = os.path.abspath(_CLI_CFGS[-1]) if _CLI_CFGS else os.path.join(workflow.basedir, "config.yaml")
+
+# Python of each conda env inside integration.sif (fixed by micromamba.dockerfile).
+PY = {
+    "spatial":       "/opt/conda/envs/spatial/bin/python",            # step 1a
+    "int_retrieval": "/opt/conda/envs/int_retrieval_env/bin/python",  # steps 1b + 2
+    "scvi":          "/opt/conda/envs/scvi_env/bin/python",           # step 3 (GPU)
+}
+
+# Host folders the container must see: the inputs, results_dir, the scripts, the
+# config file and any container.extra_binds. A folder already inside another one
+# is dropped. $TMPDIR is added in apptainer() below.
+def bind_list(paths):
+    keep = []
+    for p in sorted(set(paths)):
+        if not any(p.startswith(k + os.sep) for k in keep):
+            keep.append(p)
+    return keep
+
+BINDS = bind_list(
+    [P["xenium_raw"], P["codex_base"], RESULTS, SCRIPTS, os.path.dirname(CFG)]
+    + [abspath(b) for b in config["container"].get("extra_binds", [])]
+)
 
 # Per-slide CODEX parquets that step 1b must produce (explicit DAG targets).
 PARQUETS = expand(f"{PARQUET_DIR}/ID_{{slide}}_intensity.parquet", slide=SLIDES)

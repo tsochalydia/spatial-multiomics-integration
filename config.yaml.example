@@ -33,19 +33,13 @@ paths:
 
 # -----------------------------------------------------------------------------
 # Container. All compute runs inside this .sif via `apptainer exec`.
-# Each step picks the conda env that has its dependencies.
+# The input folders, results_dir, scripts and config file are made visible
+# inside the container automatically.
 # -----------------------------------------------------------------------------
 container:
   sif: /path/to/integration.sif
-  python:
-    spatial:       /opt/conda/envs/spatial/bin/python           # step 1a (needs spatialdata_io)
-    int_retrieval: /opt/conda/envs/int_retrieval_env/bin/python  # steps 1b + 2
-    scvi:          /opt/conda/envs/scvi_env/bin/python           # step 3 (GPU)
-  # Host paths made visible inside the container. $TMPDIR is added automatically.
-  # Must cover every input, output and the .sif location above.
-  binds:
-    - /path/to/data
-    - /path/to/results
+  # extra_binds:            # only if your data contains symlinks to other folders
+  #   - /some/other/folder
 
 
 # -----------------------------------------------------------------------------
