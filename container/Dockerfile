@@ -3,8 +3,6 @@
 #     docker build -f container/Dockerfile -t integration .
 FROM mambaorg/micromamba:2.8
 
-LABEL maintainer="Erkin <erkin.acar@bsse.ethz.ch>" \
-      description="Micromamba 2.8 - spatial env, usable by any runtime UID/GID, called as an execution image by external Snakemake"
 
 ARG PYTHON_VERSION=3.11
 
