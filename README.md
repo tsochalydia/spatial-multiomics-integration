@@ -2,11 +2,11 @@
 
 A Snakemake pipeline for spatial multi-omics on tissue slides. It:
 
-1. concatenates the Xenium cell × gene tables of several slides,
+1. concatenates the Xenium cell × gene tables of several TMA slides in one AnnData object,
 2. measures per-cell CODEX protein intensities on the Xenium cell segmentation,
 3. quality-controls both modalities and merges them per cell,
 4. integrates RNA and protein with **totalVI** and clusters the cells (Leiden), with
-   UMAPs, differential-expression tables and marker plots for annotation.
+   UMAPs, differential-expression tables and marker plots for cell-type annotation.
 
 All computation runs **inside one Apptainer image** (`integration.sif`). Snakemake runs
 outside it, in a small conda env, and submits **one SLURM job per step**.
@@ -32,8 +32,6 @@ outside it, in a small conda env, and submits **one SLURM job per step**.
           totalVI model, Leiden clusters, UMAPs, DE tables, marker plots
 ```
 
-New to the project? [docs/restructure_explained.md](docs/restructure_explained.md)
-explains in plain words how the repository is organised and why.
 
 ---
 
@@ -49,7 +47,6 @@ explains in plain words how the repository is organised and why.
 | `workflow/scripts/` | the four step scripts (`step1a_…` to `step3_…`) |
 | `envs/` | `snakemake_env.yml` (the env you install) and the three pinned envs inside the image |
 | `container/` | `Dockerfile` + `entrypoint.sh` to build the image; see `container/README.md` |
-| `docs/` | background documentation |
 
 `config/config.yaml`, `profiles/slurm/config.yaml`, results, logs, `.snakemake/` and the
 image files are git-ignored.
@@ -61,8 +58,7 @@ image files are git-ignored.
 - A **SLURM** cluster with **Apptainer** (Singularity), and a GPU partition for step 3.
   The container's torch is a CUDA 13 build.
 - **micromamba** (or conda/mamba) to create the Snakemake env.
-- The image **`integration.sif`**. Ask the maintainers for the existing one, or build it
-  (see `container/README.md`).
+- The image **`integration.sif`**.
 
 ---
 

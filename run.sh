@@ -9,8 +9,7 @@
 #   ./run.sh dag     # write dag.svg (or dag.dot) of the step graph
 #   ./run.sh unlock  # release a stale .snakemake lock after a killed run
 #
-# Config: config/config.yaml by default; another one with --configfile, e.g.
-#   ./run.sh dry --configfile config/config.test.yaml
+# Config: config/config.yaml (a copy of config/config.example.yaml).
 # Any other options are passed on to Snakemake, e.g.  ./run.sh dry --forceall
 #
 # Snakemake is taken from $SNAKEMAKE if set, else `snakemake` on PATH (activated

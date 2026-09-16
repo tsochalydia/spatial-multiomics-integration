@@ -6,9 +6,9 @@
 # This file holds everything specific to the CLUSTER (partition names, account).
 # What a run needs (memory, time, threads per step) is set in config/config.yaml.
 #
-# Snakemake stays running on the login node and submits ONE separate sbatch job
-# per rule (per step), in dependency order — step 1b is only submitted once step
-# 1a's outputs exist, etc.
+# Snakemake (started by run.sh) submits ONE separate sbatch job per rule (per
+# step), in dependency order — step 1b is only submitted once step 1a's outputs
+# exist, etc.
 
 executor: slurm
 jobs: 8                     # max SLURM jobs allowed at once
@@ -25,10 +25,10 @@ set-resources:
   step3_data_integration:
     # gpu.24h is the general GPU partition. The container's torch is a CUDA-13 build
     # (2.11+cu130); if step 3 lands on an older-driver node and torch complains about
-    # the CUDA version, use cuda13pr.24h (CUDA-13 guaranteed, usually more contended).
+    # the CUDA version, use cuda13pr.24h.
     slurm_partition: gpu.24h
 
-keep-going: True           # keep independent branches going if one job fails
+keep-going: True           # keep independent branches going if one job fails (in case parallel steps are added)
 rerun-incomplete: True     # resubmit a step whose outputs are incomplete
 restart-times: 1           # retry a failed job once
 printshellcmds: True

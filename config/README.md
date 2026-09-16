@@ -81,11 +81,6 @@ pointing somewhere else.
 |-----|---------|---------|
 | `compartment` | `cell` | Which segmentation to average CODEX pixels over: `cell` or `nucleus`. |
 
-> **Use `cell`.** With `nucleus` the averages are assigned to the wrong cells for the
-> Xenium output used here (v2+). There, nucleus label numbers don't match cell numbers:
-> in slide 0056777, almost none of the 727,641 nuclei line up (0.0%). This is a known
-> limitation of the step 1b script and has not been changed.
-
 ---
 
 ## `qc`: step 2
@@ -144,17 +139,17 @@ pointing somewhere else.
 |-----|---------|---------|
 | `top_rna` | `10` | Max. RNA markers listed per cluster in the DE table |
 | `top_pro` | `5` | Max. protein markers listed per cluster in the DE table |
-| `bf_rna` | `1.2` | Minimum `bayes_factor` (from scvi-tools' differential expression) for an RNA marker |
+| `bf_rna` | `1.2` | Minimum `bayes_factor` for an RNA marker. In scvi-tools' differential expression, `bayes_factor` is ln(Bayes factor), the natural logarithm. |
 | `bf_protein` | `0.45` | Same for proteins; lower because protein signal is noisier |
-| `min_nonzero_prop` | `0.1` | Intended: a gene must be detected in more than this fraction of a cluster's cells to appear in the dotplot. **Currently has no effect**: the plotting code uses a fixed `0.1`. Known issue, not changed. |
+| `min_nonzero_prop` | `0.1` | Intended: a gene must be detected in more than this fraction of a cluster's cells to appear in the dotplot. **Currently has no effect**: the plotting code uses a fixed `0.1`. |
 
 `top_rna`, `top_pro`, `bf_rna` and `bf_protein` are part of the output file names, e.g.
-`DE_table_top_10_rna_top_5_proteins_log2BF_rna_1.2_protein_0.45.csv`. Changing them
+`DE_table_top_10_rna_top_5_proteins_lnBF_rna_1.2_protein_0.45.csv`. Changing them
 produces new files instead of overwriting the old ones.
 
 > **Note:** after changing `top_rna`, `top_pro` or `bf_rna`, step 3 is **not** redone by
-> itself. Only the matrixplot name, which contains `bf_protein`, is what the workflow
-> checks for last. Force it with `./run.sh submit --forcerun step3_data_integration`.
+> itself: the workflow only checks for the matrixplot, whose name contains only
+> `bf_protein`. Force it with `./run.sh submit --forcerun step3_data_integration`.
 
 ---
 

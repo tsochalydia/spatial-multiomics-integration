@@ -1,9 +1,7 @@
 /test
 /config/config.yaml
-/config/config.test.yaml
 /profiles/slurm/config.yaml
 /logs
-.integration.sif.swp
 integration.sif
 integration.tar
 .snakemake

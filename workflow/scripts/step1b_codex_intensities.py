@@ -1,8 +1,9 @@
 # %% STEP 1b — Per-cell CODEX intensities from registered .tif files.
 #
-# Snakemake-adapted version of 1b_codex_intensities_test.py. The Xenium zarr base
-# is now the directory step 1a produced (passed on the command line), so the two
-# steps can never point at different zarr stores. Averaging logic is unchanged.
+# Run by workflow/Snakefile: paths come from the command line, parameters from
+# config/config.yaml (`slides`, `codex`). The zarr folder is the one step 1a
+# wrote, so both steps always use the same zarr stores. For every cell, each
+# CODEX channel is averaged over the cell's pixels in the label image.
 #
 # INPUT   --xenium-zarr-base  per-slide *.zarr from step 1a (cell labels + label images)
 #         --codex-base        one folder per slide of *_<CH>_REGISTERED_*.tiff

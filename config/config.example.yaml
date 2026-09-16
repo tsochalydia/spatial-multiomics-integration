@@ -1,7 +1,8 @@
 # =============================================================================
 # Xenium (RNA) + CODEX (protein) integration workflow — configuration
 #
-# Copy this file to config/config.yaml and fill in the values marked <...>:
+# Copy this file to config/config.yaml and replace the placeholders
+# (<...> and /path/to/...):
 #     cp config/config.example.yaml config/config.yaml
 #
 # Everything tunable lives here. workflow/Snakefile turns these into per-rule
@@ -9,7 +10,7 @@
 # the relevant section below. Edit this file, not the scripts.
 # =============================================================================
 
-# Slides to process. Both modalities are keyed on these slide_IDs.
+# Slides to process, as in the Xenium and CODEX folder names (e.g. "0056777").
 slides: ["<SLIDE_ID_1>", "<SLIDE_ID_2>"]
 
 
@@ -20,7 +21,7 @@ slides: ["<SLIDE_ID_1>", "<SLIDE_ID_2>"]
 paths:
   # --- inputs ---
   xenium_raw: /path/to/data/Xenium_raw          # one Xenium output folder per slide
-  codex_base: /path/to/data/CODEX_tif_files     # CODEX tiffs per slide
+  codex_base: /path/to/data/CODEX_tif_files     # one folder of registered CODEX tiffs per slide
 
   # --- outputs: one subfolder per step is created inside results_dir ---
   #   step1a/  zarr_dir/ (per-slide *.zarr) + xenium_concatenated.h5ad
@@ -47,7 +48,7 @@ container:
 # -----------------------------------------------------------------------------
 xenium:
   read_transcripts: false   # transcript points not needed for the cell x gene table
-  write_zarr: true          # step 1b reads the per-slide zarr stores this produces
+  write_zarr: true          # keep true: step 1b reads the per-slide zarr stores
   overwrite_zarr: false     # reuse an existing readable zarr instead of rebuilding
 
 
@@ -66,7 +67,7 @@ qc:
   min_genes: 2              # drop Xenium cells expressing fewer genes
   exclude_channels: ["DAPI"]  # channels that are never phenotyping markers
   markers: null             # null = every channel except exclude_channels; or a list to freeze the panel
-  background_marker: CD4     # per-slide background subtraction target; null to disable
+  background_marker: CD4     # per-slide background subtraction protein marker target; can also disable with null
   background_percentile: 10  # subtract this percentile, clip at 0 -> "<marker>_cor"
   lower_q: 0.001            # per-slide: intensities below this quantile -> 0
   upper_q: 0.999            # per-slide upper quantile for the outlier test
@@ -79,7 +80,7 @@ qc:
 # -----------------------------------------------------------------------------
 integration:
   batch_key: slide_ID       # one batch per whole slide
-  resolution: 1             # Leiden resolution
+  resolution: 1             # Leiden clustering resolution
   target_sum: 100           # RNA normalisation target (visualisation only)
   max_epochs: 400
   train_size: 0.9
@@ -87,9 +88,9 @@ integration:
   dedup: raise              # "raise" or "make_unique" for duplicated suffixed cell ids
   top_rna: 10               # DE table: max RNA features per cluster
   top_pro: 5                # DE table: max protein features per cluster
-  bf_rna: 1.2               # log2 Bayes-factor cutoff, RNA
-  bf_protein: 0.45          # log2 Bayes-factor cutoff, protein (noisier -> lower)
-  min_nonzero_prop: 0.1     # dotplot: gene must be detected in > this fraction of a cluster
+  bf_rna: 1.2               # minimum natural logarithm Bayes factor (scvi-tools DE) for RNA markers
+  bf_protein: 0.45          # minimum natural logarithm Bayes factor for protein markers (noisier -> lower)
+  min_nonzero_prop: 0.1     # currently has no effect: the dotplot uses a fixed 0.1
 
 
 # -----------------------------------------------------------------------------
@@ -102,4 +103,4 @@ resources:
   step1a: { mem_mb_per_cpu: 16000, runtime: 240, threads: 4 }   # ~64 GB total, 4 h
   step1b: { mem_mb_per_cpu: 24000, runtime: 180, threads: 4 }   # ~96 GB total, 3 h
   step2:  { mem_mb_per_cpu: 16000, runtime: 120, threads: 4 }   # ~64 GB total, 2 h
-  step3:  { mem_mb_per_cpu: 16000, runtime: 1440, threads: 8 }  # ~128 GB total, 24 h (GPU) — gpu.24h max
+  step3:  { mem_mb_per_cpu: 16000, runtime: 1440, threads: 8 }  # ~128 GB total, 24 h (GPU)

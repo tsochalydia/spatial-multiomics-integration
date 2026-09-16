@@ -1,9 +1,8 @@
 # %% STEP 1a — Concatenate the Xenium cell x gene tables of all TMA slides.
 #
-# Snakemake-adapted version of 1a_xenium_concatenation_test.py: paths come from
-# the command line, tunable parameters from the workflow config YAML. The core
-# logic (per-slide zarr build, "<cell_id>_<slide_ID>" indexing, concat) is
-# unchanged.
+# Run by workflow/Snakefile: paths come from the command line, parameters from
+# config/config.yaml (`slides`, `xenium`). Per slide: read the raw run, write a
+# .zarr store, index the cells as "<cell_id>_<slide_ID>"; then concatenate.
 #
 # INPUT   a directory of raw Xenium runs (each contains experiment.xenium)
 # OUTPUT  --zarr-dir     one <run_name>.zarr per slide (read by step 1b)

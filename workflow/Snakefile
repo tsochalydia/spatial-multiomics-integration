@@ -8,13 +8,13 @@
 #
 # All compute runs INSIDE integration.sif via `apptainer exec`; Snakemake only
 # orchestrates and submits one SLURM job per rule. Parameters live in
-# config/config.yaml (or the file given with --configfile).
+# config/config.yaml (a copy of config/config.example.yaml).
 # =============================================================================
 
 import os
 
-# config/config.yaml is read only when no --configfile is given, so a different
-# config (e.g. config/config.test.yaml) never inherits settings from it.
+# Settings are read from config/config.yaml. If a file is passed with
+# --configfile, only that file is read.
 DEFAULT_CONFIG = "config/config.yaml"
 if not workflow.config_settings.configfiles:
     configfile: DEFAULT_CONFIG
@@ -41,12 +41,12 @@ QC_DIR          = f"{RESULTS}/step2"                             # final_adata.h
 INTEGRATION_DIR = f"{RESULTS}/step3"                             # totalVI model, clusters, plots
 LOGS            = f"{RESULTS}/logs"                              # one log per step
 
-# Config file the step scripts read: the one passed with --configfile (e.g. the
-# test config), otherwise config/config.yaml.
+# Config file the step scripts read: config/config.yaml, or the file passed
+# with --configfile.
 _CLI_CFGS = list(workflow.config_settings.configfiles)
 CFG = os.path.abspath(_CLI_CFGS[-1] if _CLI_CFGS else DEFAULT_CONFIG)
 
-# Python of each conda env inside integration.sif (fixed by container/Dockerfile).
+# Python of each conda env inside integration.sif (defined in container/Dockerfile).
 PY = {
     "spatial":       "/opt/conda/envs/spatial/bin/python",            # step 1a
     "int_retrieval": "/opt/conda/envs/int_retrieval_env/bin/python",  # steps 1b + 2
@@ -75,10 +75,10 @@ PARQUETS = expand(f"{PARQUET_DIR}/ID_{{slide}}_intensity.parquet", slide=SLIDES)
 # script builds them, so they stay in sync when you change the thresholds.
 IC = config["integration"]
 _DE_STEM   = (f"top_{IC['top_rna']}_rna_top_{IC['top_pro']}_proteins_"
-             f"log2BF_rna_{IC['bf_rna']}_protein_{IC['bf_protein']}")
+             f"lnBF_rna_{IC['bf_rna']}_protein_{IC['bf_protein']}")
 DE_TABLE   = f"DE_table_{_DE_STEM}.csv"
 DOTPLOT    = f"dotplot_{_DE_STEM}.png"
-MATRIXPLOT = f"matrixplot_protein_log2BF_{IC['bf_protein']}.png"
+MATRIXPLOT = f"matrixplot_protein_lnBF_{IC['bf_protein']}.png"
 
 
 # -- apptainer exec prefix ----------------------------------------------------

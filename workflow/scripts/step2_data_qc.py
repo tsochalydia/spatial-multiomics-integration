@@ -1,7 +1,7 @@
 # %% STEP 2 — QC of both modalities + merge into one AnnData.
 #
-# Snakemake-adapted version of 2_data_qc.py: paths from the command line, QC
-# parameters from the config YAML. The QC logic is unchanged.
+# Run by workflow/Snakefile: paths come from the command line, parameters from
+# config/config.yaml (`qc`).
 #
 # INPUT   --input-h5ad   concatenated Xenium AnnData from step 1a
 #         --parquet-dir   ID_<slide>_intensity.parquet files from step 1b
@@ -68,7 +68,7 @@ MAX_MARKERS_ABOVE_UPPER_Q = qc["max_markers_above_upper_q"]
 
 MARKER_SUFFIX = qc["marker_suffix"]
 
-# Columns a parquet may carry that are not markers (schemas differ between 1b versions)
+# Parquet columns that are never treated as markers
 PARQUET_META_COLS = {CELL_UID, CELL_ID, "cell_labels", SLIDE_KEY, "area_px", "sample_id", "run"}
 PARQUET_RE = re.compile(r"^ID_(?P<slide_ID>\d+)_intensity\.parquet$")
 

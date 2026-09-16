@@ -1,7 +1,8 @@
 # %% STEP 3 — totalVI integration of the Xenium RNA + CODEX protein modalities.
 #
-# Snakemake-adapted version of 3_data_integration.py: paths from the command line,
-# training/clustering parameters from the config YAML. Runs on GPU (scvi_env).
+# Run by workflow/Snakefile: paths come from the command line, parameters from
+# config/config.yaml (`integration`, plus `qc.marker_suffix`). Runs on one GPU
+# (scvi_env).
 #
 # INPUT   --input-h5ad  final_adata.h5ad from step 2
 # OUTPUT  --save-dir     trained totalVI model, joint latent, denoised RNA/protein,
@@ -76,13 +77,14 @@ MAX_EPOCHS              = ic["max_epochs"]
 TRAIN_SIZE              = ic["train_size"]
 EARLY_STOPPING_PATIENCE = ic["early_stopping_patience"]
 
-# DE analysis: max features exported per cluster and log2(BF) thresholds
+# DE analysis: max features exported per cluster and ln(Bayes factor) thresholds
 TOP_RNA = ic["top_rna"]
 TOP_PRO = ic["top_pro"]
 BF_rna     = ic["bf_rna"]
 BF_protein = ic["bf_protein"]
 
-# Genes must also be detected in more than this fraction of a cluster's cells (dotplot)
+# Minimum detection fraction for dotplot genes. Currently has no effect: the
+# dotplot section below uses a fixed 0.1.
 MIN_NONZERO_PROP = ic["min_nonzero_prop"]
 
 MARKER_SUFFIX = cfg["qc"]["marker_suffix"]   # set by step 2, stripped for readable plot labels
@@ -340,7 +342,7 @@ for c in cats:
 marker_table = pd.DataFrame(filtered_table)
 marker_table.to_csv(
     SAVE_DIR / f"DE_table_top_{TOP_RNA}_rna_top_{TOP_PRO}_proteins_"
-               f"log2BF_rna_{BF_rna}_protein_{BF_protein}.csv",
+               f"lnBF_rna_{BF_rna}_protein_{BF_protein}.csv",
     index=False,
 )
 print(marker_table[["cluster", "n_cells", "n_rna_after_filter", "n_pro_after_filter"]].to_string())
@@ -380,7 +382,7 @@ sc.pl.dotplot(
     swap_axes=True,
 )
 
-plt.savefig(SAVE_DIR / f'dotplot_top_{TOP_RNA}_rna_top_{TOP_PRO}_proteins_log2BF_rna_{BF_rna}_protein_{BF_protein}.png', bbox_inches="tight", dpi=300)
+plt.savefig(SAVE_DIR / f'dotplot_top_{TOP_RNA}_rna_top_{TOP_PRO}_proteins_lnBF_rna_{BF_rna}_protein_{BF_protein}.png', bbox_inches="tight", dpi=300)
 plt.close()
 
 sc.pl.matrixplot(
@@ -389,7 +391,7 @@ sc.pl.matrixplot(
     layer="denoised_protein", cmap="Greens", standard_scale="var",
     swap_axes=True, show=False,
 )
-plt.savefig(SAVE_DIR / f"matrixplot_protein_log2BF_{BF_protein}.png",
+plt.savefig(SAVE_DIR / f"matrixplot_protein_lnBF_{BF_protein}.png",
             bbox_inches="tight", dpi=300)
 plt.close()
 

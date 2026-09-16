@@ -46,7 +46,7 @@ node to run Snakemake.
 `apptainer inspect integration.sif` shows:
 
 - **built:** 14 July 2026, with Singularity 4.5.0
-- **built from:** a Docker archive (`bootstrap: docker-archive`, from `integration2.tar`),
+- **built from:** a Docker archive (`bootstrap: docker-archive`, from `integration.tar`),
   i.e. an image built with Docker, then saved to a `.tar` file and converted
 - **size:** 13 GB
 
@@ -54,25 +54,23 @@ node to run Snakemake.
 
 ## Rebuilding the image
 
-You need Docker (or Podman) on a machine with internet access, and Apptainer or
-Singularity to convert the result. Building takes a long time and needs tens of GB of
-disk space.
+Only needed if you can't get the existing `integration.sif`. This is how the current
+image was made.
 
-```bash
-# 1. Build the Docker image, from the REPOSITORY ROOT (the build needs envs/ and container/)
-docker build -f container/Dockerfile -t integration .
-
-# 2. Save it to an archive
-docker save integration:latest -o integration.tar
-
-# 3. Convert the archive to an Apptainer image
-apptainer build integration.sif docker-archive://integration.tar
-```
-
-The `.dockerignore` in the repository root makes step 1 send only `envs/` and
-`container/` to Docker, not the large image files or results.
-
-Then point `container.sif` in `config/config.yaml` to the new `.sif`.
+1. **On a computer with Docker and internet access**, from the
+   repository root:
+   ```bash
+   docker build -f container/Dockerfile -t integration .
+   docker save integration:latest -o integration.tar
+   ```
+   The `.dockerignore` makes Docker read only `envs/` and `container/`, not the large
+   image files or results.
+2. **Copy `integration.tar` to Euler and convert it.** Euler has Apptainer (the new name
+   of Singularity; `singularity build` works the same way):
+   ```bash
+   apptainer build integration.sif docker-archive://integration.tar
+   ```
+3. Set `container.sif` in `config/config.yaml` to the new file, and check the points below.
 
 ### Before relying on a rebuilt image, check
 
@@ -84,10 +82,7 @@ Then point `container.sif` in `config/config.yaml` to the new `.sif`.
 - **Duplicate pins in `envs/scvi_env.yml`:** `anndata` and `mudata` appear twice, once
   from conda (anndata 0.12.14, mudata 0.3.8) and once from pip (anndata 0.12.10, mudata
   0.3.4). The current image has the **pip** versions. The file also lists NVIDIA
-  libraries for both CUDA 12 and CUDA 13. These were left as they were exported and have
-  not been cleaned up.
-- **The Dockerfile's metadata** still describes it as a "spatial env" image. Only the
-  label text is out of date.
+  libraries for both CUDA 12 and CUDA 13.
 
 ---
 
@@ -95,4 +90,4 @@ Then point `container.sif` in `config/config.yaml` to the new `.sif`.
 
 torch in `scvi_env` is built for CUDA 13, so step 3 needs a GPU node whose NVIDIA driver
 supports CUDA 13. If step 3 fails with a CUDA or driver error, set its partition in
-`profiles/slurm/config.yaml` to one with newer drivers (on ETH Euler: `cuda13pr.24h`).
+`profiles/slurm/config.yaml` to one with newer drivers.
